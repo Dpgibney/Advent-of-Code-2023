@@ -1,0 +1,120 @@
+import numpy as np
+
+file1 = open('p1_input.txt','r')
+#file1 = open('p1_input.example','r')
+
+dir_map = {"R": np.array([0,1]), "L": np.array([0,-1]), "U": np.array([-1,0]), "D": np.array([1,0])}
+
+dig_plan = [[group for group in line.split()] for line in file1.read().splitlines()]
+
+def points_overlap(old_x_,new_x):
+    #print(old_x_)
+    #print("new: ",new_x)
+    count = 0
+    to_del = []
+    for index, old_x in enumerate(old_x_):
+        old_min = min(old_x)
+        old_max = max(old_x)
+        new_min = min(new_x)
+        new_max = max(new_x)
+        if old_min > new_max:
+            continue
+        elif old_max < new_min:
+            continue
+        elif old_min == new_max:
+            count += 1
+        elif old_max == new_min:
+            count += 1
+        elif (old_min <= new_min) and (new_min <= old_max) and (old_max <= new_max):
+            count += abs(old_max - new_min) + 1
+        elif old_min <= new_min and new_max <= old_max:
+            count += abs(new_max - new_min) + 1
+        elif (new_min <= old_min) and (old_min <= new_max) and (new_max <= old_max):
+            count += abs(new_max - old_min) + 1
+        elif new_min <= old_min and old_max <= new_max:
+            count += abs(old_max - old_min) + 1
+    return count
+
+corners = [[0,0]]
+for dig in dig_plan:
+    direction, distance, color = dig
+    distance = int(distance)
+    color = color[1:-1]
+
+    pos = [0,0]
+    pos[0] = corners[-1][0] + (distance * dir_map[direction][0])
+    pos[1] = corners[-1][1] + (distance * dir_map[direction][1])
+    corners.append(pos)
+
+corners = corners[1:]
+
+size = 0
+
+'''p1 goes in reverse order'''
+p1 = -1
+p2 = 0
+
+prev_dx = {}
+
+while len(corners) > 2:
+    '''Only doing up and down'''
+    dy1 = corners[p1][0] - corners[p1 - 1][0]
+    dy2 = corners[p2][0] - corners[p2 + 1][0]
+    
+    y1 = corners[p1][0]
+    y2 = corners[p2][0]
+    
+    dx = abs(corners[p1][1] - corners[p2][1]) + 1
+
+    
+    if y1 == y2 and y1 == max(corners)[0]:
+        #_ = input()
+        #print(np.array(corners))
+        if dy1 > 0 and dy2 > 0:
+            if dy1 < dy2:
+                size += dx * (dy1 + 1)
+                corners.insert(1,[y2-dy1,corners[p2][1]])
+            elif dy2 < dy1:
+                size += dx * (dy2 + 1)
+                corners.insert(1,[y1-dy2,corners[p1][1]])
+            else:
+                size += dx * (dy1 + 1)
+
+            '''Get overlapped area'''
+            dx_ = [corners[p1][1],corners[p2][1]]
+            tmp = 0
+            if y1 in prev_dx:
+                tmp = points_overlap(prev_dx[y1],dx_)
+            if dy1 < dy2:
+                new_y = y1 - dy1
+                if new_y in prev_dx:
+                    prev_dx[new_y].append(dx_)
+                else:
+                    prev_dx.update({new_y:[dx_]})
+            else:
+                new_y = y1 - dy2
+                if new_y in prev_dx:
+                    prev_dx[new_y].append(dx_)
+                else:
+                    prev_dx.update({new_y:[dx_]})
+            size -= tmp
+
+            del corners[p1]
+            del corners[p2]
+
+        elif dy1 == 0 and dy2 == 0:
+            del corners[p1]
+            del corners[p2]
+        elif dy1 == 0:
+            del corners[p1]
+        elif dy2 == 0:
+            del corners[p2]
+    else:
+        '''Rotate through list'''
+        corners.insert(len(corners),corners[0].copy())
+        del corners[0]
+print(size)
+print(len(corners))
+#if
+
+
